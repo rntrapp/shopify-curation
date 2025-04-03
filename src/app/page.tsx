@@ -1,6 +1,8 @@
 'use client';
 
+import React from 'react';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 interface Variant {
   sku: string;
@@ -24,13 +26,26 @@ interface GroupedItem extends Omit<Item, 'variants'> {
   images: string[];
 }
 
-export default function Home() {
+interface SheetItem {
+  Handle: string;
+  Title: string;
+  'Body (HTML)': string;
+  Type: string;
+  Tags: string;
+  'Image Src': string;
+  'Variant SKU': string;
+  'Option1 Value': string;
+  'Option2 Value': string;
+  'Variant Inventory Qty': string;
+}
+
+export default function Home(): React.ReactElement {
   const [groupedItems, setGroupedItems] = useState<GroupedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (): Promise<void> => {
       try {
         setLoading(true);
         setError(null);
@@ -46,7 +61,7 @@ export default function Home() {
         
 
         // Group items by handle and process the data
-        const grouped = Object.values(data.items.reduce((acc: Record<string, GroupedItem>, item: any) => {
+        const grouped = Object.values(data.items.reduce((acc: Record<string, GroupedItem>, item: SheetItem) => {
           const handle = item.Handle;
           
           if (!acc[handle]) {
@@ -57,6 +72,7 @@ export default function Home() {
               body_html: item['Body (HTML)'],
               type: item.Type,
               tags: item.Tags,
+              image: item['Image Src'],
               images: [], // We'll collect all unique images here
               variants: [] // We'll collect all variants here
             };
@@ -82,7 +98,7 @@ export default function Home() {
 
         console.log(grouped);
 
-        setGroupedItems(grouped);
+        setGroupedItems(grouped as GroupedItem[]);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -137,11 +153,13 @@ export default function Home() {
               {/* Images Column */}
               <div className="col-span-4 space-y-4">
                 {item.images.slice(0, 2).map((imageUrl, index) => (
-                  <a href={imageUrl} target="_blank" rel="noopener noreferrer">
-                    <img
+                  <a href={imageUrl} target="_blank" rel="noopener noreferrer" key={`${item.handle}-image-${index}`}>
+                    <Image
                       key={`${item.handle}-image-${index}`}
                       src={imageUrl}
                       alt={`${item.title} - Image ${index + 1}`}
+                      width={500}
+                      height={500}
                       className="w-full rounded-lg object-cover border border-black my-1"
                     />
                   </a>
