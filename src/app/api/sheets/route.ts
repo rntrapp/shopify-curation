@@ -1,8 +1,13 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
+import { GaxiosResponse } from 'gaxios';
+import { sheets_v4 } from 'googleapis';
 
 const SPREADSHEET_ID = '1v0aOYbjRTz-Pse3AS5y5jLUu34PdNhx0fPvN0w6zqiA';
 const SHEET_NAME = 'Shopify product import';
+
+type SheetResponse = GaxiosResponse<sheets_v4.Schema$ValueRange>;
+type SheetRowValue = string | number | null;
 
 export async function GET() {
   try {
@@ -23,7 +28,7 @@ export async function GET() {
     });
 
     // Get the data from the spreadsheet
-    const response = await sheets.spreadsheets.values.get({
+    const response: SheetResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_NAME}!A:Z`, // Get all columns
     });
@@ -40,7 +45,7 @@ export async function GET() {
     // Convert the data to a more usable format
     const headers = rows[0];
     const items = rows.slice(1).map(row => {
-      const item: Record<string, any> = {};
+      const item: Record<string, SheetRowValue> = {};
       headers.forEach((header: string, index: number) => {
         item[header] = row[index] || null; // Handle empty cells
       });
