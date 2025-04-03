@@ -9,7 +9,7 @@ const SHEET_NAME = 'Shopify product import';
 type SheetResponse = GaxiosResponse<sheets_v4.Schema$ValueRange>;
 type SheetRowValue = string | number | null;
 
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   try {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY;
     
