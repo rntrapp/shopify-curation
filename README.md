@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Product Data Viewer 🛍️ 
 
-## Getting Started
+This app fetches and displays product data from a Google Spreadsheet in a beautiful, organized layout! ✨
 
-First, run the development server:
+## Features 🌟
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- 📊 Reads data directly from Google Sheets
+- 🔍 Groups products by handle
+- 🖼️ Shows product images (main + cropped views)
+- 📝 Displays product details:
+  - Title
+  - Description (HTML)
+  - Type
+  - Tags
+- 📦 Lists all variants with:
+  - SKU
+  - Size/Color options
+  - Inventory quantity
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Getting Started 🚀
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Set up your Google Sheets API key:
+   ```bash
+   # Create a .env.local file with:
+   NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY=your_api_key_here
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Run the development server 💻:
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   ```
 
-## Learn More
+3. Open [http://localhost:3000](http://localhost:3000) with your browser to see your products! 🎉
 
-To learn more about Next.js, take a look at the following resources:
+## Tech Stack 🛠️
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- ⚛️ Next.js
+- 📈 Google Sheets API
+- 🎨 Tailwind CSS
+- 📱 Fully responsive design
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Environment Variables 🔐
 
-## Deploy on Vercel
+Required environment variables:
+- `NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY`: Your Google Sheets API key
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Data Structure 📋
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The app expects a spreadsheet with the following columns:
+- Handle
+- Title
+- Body (HTML)
+- Type
+- Tags
+- Image Src
+- Variant SKU
+- Option1 Value (Size)
+- Option2 Value (Color)
+- Variant Inventory Quantity
+
+## Contributing 🤝
+
+Feel free to contribute to this project! All feedback and contributions are welcome! 💕
+
+---
+
+Built with ❤️ using [Next.js](https://nextjs.org)

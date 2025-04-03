@@ -1,103 +1,214 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState } from 'react';
+
+interface Variant {
+  sku: string;
+  option1: string;
+  option2: string;
+  inventory_quantity: number;
+}
+
+interface Item {
+  handle: string;
+  title: string;
+  body_html: string;
+  type: string;
+  tags: string;
+  image: string;
+  variants: Variant[];
+}
+
+interface GroupedItem extends Omit<Item, 'variants'> {
+  variants: Variant[];
+  images: string[];
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [groupedItems, setGroupedItems] = useState<GroupedItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetch('/api/sheets');
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch data');
+        }
+
+        // const handles = [...new Set(data.items.map((item: any) => item.Handle))];
+        
+
+        // Group items by handle and process the data
+        const grouped = Object.values(data.items.reduce((acc: Record<string, GroupedItem>, item: any) => {
+          const handle = item.Handle;
+          
+          if (!acc[handle]) {
+            // Initialize the group with the first item's data
+            acc[handle] = {
+              handle: handle,
+              title: item.Title,
+              body_html: item['Body (HTML)'],
+              type: item.Type,
+              tags: item.Tags,
+              images: [], // We'll collect all unique images here
+              variants: [] // We'll collect all variants here
+            };
+          }
+
+          // Add images if they exist and are unique
+          if (item['Image Src'] && !acc[handle].images.includes(item['Image Src'])) {
+            acc[handle].images.push(item['Image Src']);
+          }
+
+          // Only add variant if we have variant data (SKU exists)
+          if (item['Variant SKU']) {
+            acc[handle].variants.push({
+              sku: item['Variant SKU'],
+              option1: item['Option1 Value'] || '',
+              option2: item['Option2 Value'] || '',
+              inventory_quantity: parseInt(item['Variant Inventory Qty']) || 0
+            });
+          }
+
+          return acc;
+        }, {}));
+
+        console.log(grouped);
+
+        setGroupedItems(grouped);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-xl text-gray-600">Loading data...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+        <div className="text-xl text-red-500 mb-4">Error: {error}</div>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (groupedItems.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-xl text-gray-600">No items found</div>
+      </div>
+    );
+  }
+
+  return (
+    <main className="min-h-screen p-8 bg-gray-50">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">Product List</h1>
+      <div className="space-y-8">
+        {groupedItems.map((item) => (
+          <div
+            key={item.handle}
+            className="bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <div className="grid grid-cols-12 gap-6 p-6">
+              {/* Images Column */}
+              <div className="col-span-4 space-y-4">
+                {item.images.slice(0, 2).map((imageUrl, index) => (
+                  <a href={imageUrl} target="_blank" rel="noopener noreferrer">
+                    <img
+                      key={`${item.handle}-image-${index}`}
+                      src={imageUrl}
+                      alt={`${item.title} - Image ${index + 1}`}
+                      className="w-full rounded-lg object-cover border border-black my-1"
+                    />
+                  </a>
+                ))}
+              </div>
+
+              {/* Details Column */}
+              <div className="col-span-8 space-y-4">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  ID: {item.handle.split('-').pop()} <small className="text-gray-500">{item.handle}</small>
+                </h2>
+                <div className="gap-4 py-2">
+                  <div className="font-bold text-gray-800 mb-2">{item.title}</div>
+                  <div className="max-w-none bg-gray-100 text-black p-4 rounded-lg mb-2"
+                     dangerouslySetInnerHTML={{ __html: item.body_html }}
+                  />
+                  <div>
+                    <span className="font-semibold text-gray-600">Type:</span>
+                    <span className="ml-2 text-gray-800">{item.type}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-600 mr-2">Tags:</span>
+                      {item.tags.split(',').map((tag, index) => (
+                        <span key={index} className="px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm mr-2">
+                          {tag.trim()}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+
+                {/* Variants Section */}
+                <div className="mt-4">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Variants</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Options</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Inventory</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {item.variants.map((variant, index) => (
+                          <tr key={`${item.handle}-variant-${variant.sku || index}`}
+                            className="hover:bg-gray-50"
+                          >
+                            <td className="px-3 py-2 text-sm text-gray-800">{variant.sku}</td>
+                            <td className="px-3 py-2 text-sm text-gray-800">
+                              {[variant.option1, variant.option2]
+                                .filter(Boolean)
+                                .join(' / ')}
+                            </td>
+                            <td className="px-3 py-2 text-sm text-gray-800">
+                              {variant.inventory_quantity}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
   );
 }
