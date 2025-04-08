@@ -15,19 +15,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>): React.ReactElement {
+}) {
   return (
     <html lang="en">
-      <head>
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-      </head>
       <body className={`${inter.variable} antialiased`}>
         <div className="flex min-h-screen">
           <SidePanel />
-          
-          {/* Main Content */}
           <main className="flex-1 p-6 transition-all duration-300">
             {children}
           </main>
