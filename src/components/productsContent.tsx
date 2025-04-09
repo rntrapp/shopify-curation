@@ -47,6 +47,8 @@ export default function ProductsContent() {
   const [error, setError] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [expandedVariants, setExpandedVariants] = useState<Set<string>>(new Set());
 
   // Add this new useEffect to reset filters when drop changes
   useEffect(() => {
@@ -152,6 +154,31 @@ export default function ProductsContent() {
     return filteredItems.filter(item => 
       item.variants.some(v => v.option2 === color)
     ).length;
+  };
+
+  // Add toggle function
+  const toggleDescription = (handle: string) => {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(handle)) {
+        newSet.delete(handle);
+      } else {
+        newSet.add(handle);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleVariants = (handle: string) => {
+    setExpandedVariants(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(handle)) {
+        newSet.delete(handle);
+      } else {
+        newSet.add(handle);
+      }
+      return newSet;
+    });
   };
 
   if (loading) {
@@ -264,16 +291,13 @@ export default function ProductsContent() {
                 className="border rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
               >
                 {item.images.length > 0 && (
-                  <div className="relative w-full" style={{ height: '486px', maxWidth: '324px', margin: '0 auto' }}>
+                  <div className="relative w-full h-[486px]">
                     <Image 
                       src={item.images[0]} 
                       alt={item.title || 'Product image'} 
                       fill
-                      sizes="324px"
-                      style={{ 
-                        objectFit: 'cover',
-                        objectPosition: 'center' 
-                      }}
+                      sizes="(max-width: 768px) 100vw, 486px"
+                      className="object-cover object-center"
                       priority
                     />
                   </div>
@@ -292,27 +316,55 @@ export default function ProductsContent() {
                     <p className="text-sm text-gray-600 mb-2">Colour: {item.variants[0].option2}</p>
                   )}
                   
+                  <h3 
+                    className="font-medium text-lg my-2 cursor-pointer hover:text-blue-600 flex items-center gap-2"
+                    onClick={() => toggleDescription(item.handle)}
+                  >
+                    Description
+                    <span className="material-icons text-sm">
+                      {expandedDescriptions.has(item.handle) ? 'expand_less' : 'expand_more'}
+                    </span>
+                  </h3>
+                  
+                  {expandedDescriptions.has(item.handle) && (
+                    <div 
+                      className="text-sm text-gray-600 mb-4 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: item.body_html }}
+                    />
+                  )}
+
                   {item.variants.length > 0 && (
                     <div className="mt-4">
-                      <h3 className="font-medium text-lg mb-2">Variants ({item.variants.length})</h3>
-                      <div className="space-y-2">
-                        {item.variants.slice(0, 3).map((variant, idx) => (
-                          <div key={variant.sku || idx} className="text-sm border-t pt-2">
-                            <p className="font-medium">{variant.sku}</p>
-                            <div className="grid grid-cols-2 gap-2 mt-1">
-                              {variant.option1 && (
-                                <p>Size: {variant.option1}</p>
-                              )}
-                              <p>Qty: {variant.inventory_quantity}</p>
+                      <h3 
+                        className="font-medium text-lg mb-2 cursor-pointer hover:text-blue-600 flex items-center gap-2"
+                        onClick={() => toggleVariants(item.handle)}
+                      >
+                        Variants ({item.variants.length})
+                        <span className="material-icons text-sm">
+                          {expandedVariants.has(item.handle) ? 'expand_less' : 'expand_more'}
+                        </span>
+                      </h3>
+                      
+                      {expandedVariants.has(item.handle) && (
+                        <div className="space-y-2">
+                          {item.variants.slice(0, 3).map((variant, idx) => (
+                            <div key={variant.sku || idx} className="text-sm border-t pt-2">
+                              <p className="font-medium">{variant.sku}</p>
+                              <div className="grid grid-cols-2 gap-2 mt-1">
+                                {variant.option1 && (
+                                  <p>Size: {variant.option1}</p>
+                                )}
+                                <p>Qty: {variant.inventory_quantity}</p>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                        {item.variants.length > 3 && (
-                          <p className="text-sm text-gray-500 italic">
-                            +{item.variants.length - 3} more variants
-                          </p>
-                        )}
-                      </div>
+                          ))}
+                          {item.variants.length > 3 && (
+                            <p className="text-sm text-gray-500 italic">
+                              +{item.variants.length - 3} more variants
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                   
