@@ -153,7 +153,7 @@ export default function ProductsContent() {
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold mb-8">
         {dropParam === 'unsorted' 
-          ? 'Unsorted Items' 
+          ? `Unsorted Items (${filteredItems.length})`
           : dropParam 
             ? `Drop ${dropParam} Items (${filteredItems.length})` 
             : `All Items (${filteredItems.length})`
@@ -215,6 +215,26 @@ export default function ProductsContent() {
                         +{item.variants.length - 3} more variants
                       </p>
                     )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Additional Images Gallery */}
+              {item.images.length > 1 && (
+                <div className="mt-4 border-t pt-4">
+                  <h3 className="font-medium text-sm mb-2">Additional Images</h3>
+                  <div className="grid grid-cols-4 gap-2">
+                    {item.images.slice(1).map((imgSrc, idx) => (
+                      <div key={idx} className="relative w-full aspect-square">
+                        <Image
+                          src={imgSrc}
+                          alt="No image"
+                          fill
+                          sizes="80px"
+                          className="rounded-md object-cover"
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

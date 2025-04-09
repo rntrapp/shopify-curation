@@ -23,7 +23,7 @@ export default function SidePanel() {
         aria-label={isCollapsed ? "Expand menu" : "Collapse menu"}
       >
         <span className="inline-block translate-y-[-1px]">
-          {isCollapsed ? '→' : '←'}
+          {isCollapsed ? '❯' : '❮'}
         </span>
       </button>
       
@@ -44,24 +44,6 @@ export default function SidePanel() {
               >
                 <span className="material-icons text-xl">home</span>
                 {!isCollapsed && <span className="ml-2">Home</span>}
-              </Link>
-            </li>
-            <li>
-              <Link 
-                href="/dashboard" 
-                className={`hover:text-gray-300 flex items-center ${isCollapsed ? 'justify-center' : ''}`}
-              >
-                <span className="material-icons text-xl">dashboard</span>
-                {!isCollapsed && <span className="ml-2">Dashboard</span>}
-              </Link>
-            </li>
-            <li>
-              <Link 
-                href="/settings" 
-                className={`hover:text-gray-300 flex items-center ${isCollapsed ? 'justify-center' : ''}`}
-              >
-                <span className="material-icons text-xl">settings</span>
-                {!isCollapsed && <span className="ml-2">Settings</span>}
               </Link>
             </li>
           </ul>
