@@ -17,6 +17,7 @@ type SheetItem = {
   'Variant Inventory Qty': string;
   'Variant Inventory Quantity': number;
   'Drop #'?: string | number | null;
+  'Variant Price': string | number;
 };
 
 type Variant = {
@@ -36,6 +37,7 @@ type GroupedItem = {
   images: string[];
   variants: Variant[];
   dropNumber?: string | number | null;
+  price: string | number;
 };
 
 export default function ProductsContent() {
@@ -91,7 +93,8 @@ export default function ProductsContent() {
               image: item['Image Src'],
               images: [],
               variants: [],
-              dropNumber: item['Drop #']
+              dropNumber: item['Drop #'],
+              price: item['Variant Price'] || 'N/A'
             };
           }
 
@@ -192,7 +195,7 @@ export default function ProductsContent() {
   if (error) {
     return (
       <div className="text-center p-8">
-        <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
+        <h2 className="text-2xl font-bold text-red-600 mb-4 min-h-[56px]">Error</h2>
         <p>{error}</p>
       </div>
     );
@@ -305,6 +308,11 @@ export default function ProductsContent() {
                 
                 <div className="p-4">
                   <h2 className="text-xl font-semibold mb-2">{item.title}</h2>
+                  {item.price && (
+                    <p className="text-lg font-medium text-blue-600 mb-2">
+                      ${item.price}
+                    </p>
+                  )}
                   <p className="text-sm text-gray-600 mb-2">Handle: {item.handle}</p>
                   {item.dropNumber && (
                     <p className="text-sm text-gray-600 mb-2">Drop: {item.dropNumber}</p>
