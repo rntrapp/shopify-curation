@@ -46,6 +46,15 @@ export default function SidePanel() {
                 {!isCollapsed && <span className="ml-2">Home</span>}
               </Link>
             </li>
+            <li>
+              <Link 
+                href="/sizeMatch" 
+                className={`hover:text-gray-300 flex items-center ${isCollapsed ? 'justify-center' : ''}`}
+              >
+                <span className="material-icons text-xl">straighten</span>
+                {!isCollapsed && <span className="ml-2">Size Match</span>}
+              </Link>
+            </li>
           </ul>
           
           <h2 className={`text-xl font-semibold mt-6 ${isCollapsed ? 'sr-only' : ''}`}>Drops</h2>
