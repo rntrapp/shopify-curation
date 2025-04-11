@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 type SheetItem = {
   Handle: string;
@@ -12,6 +13,7 @@ type SheetItem = {
   'Option2 Value': string;
   'Variant Inventory Qty': string;
   'Variant Inventory Quantity': number;
+  'Drop #'?: string | number | null;
 };
 
 type Variant = {
@@ -26,14 +28,20 @@ type GroupedItem = {
   image: string;
   variants: Variant[];
   images: string[];
+  dropNumber?: string | number | null;
 };
 
 export default function SizeMatchContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const dropParam = searchParams?.get('drop') ?? null;
+
   const [groupedItems, setGroupedItems] = useState<GroupedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndexes, setCurrentImageIndexes] = useState<Record<string, number>>({});
   const [mousePositions, setMousePositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [imageLoading, setImageLoading] = useState<Record<string, boolean>>({});
 
   // Helper function to generate image URLs with sequential letters
   const generateImageUrls = (baseUrl: string, variantCount: number) => {
@@ -68,7 +76,8 @@ export default function SizeMatchContent() {
               title: item.Title,
               image: item['Image Src'],
               variants: [],
-              images: []
+              images: [],
+              dropNumber: item['Drop #']
             };
           }
 
@@ -98,6 +107,13 @@ export default function SizeMatchContent() {
         }, {} as Record<string, number>);
         setCurrentImageIndexes(initialIndexes);
 
+        // Initialize loading states
+        const initialLoadingStates = groupedWithImages.reduce((acc, item) => {
+          acc[item.handle] = false;
+          return acc;
+        }, {} as Record<string, boolean>);
+        setImageLoading(initialLoadingStates);
+
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
@@ -109,6 +125,10 @@ export default function SizeMatchContent() {
   }, []);
 
   const handlePrevImage = (handle: string) => {
+    setImageLoading(prev => ({ ...prev, [handle]: true }));
+    setTimeout(() => {
+      setImageLoading(prev => ({ ...prev, [handle]: false }));
+    }, 5000);
     setCurrentImageIndexes(prev => ({
       ...prev,
       [handle]: (prev[handle] - 1 + groupedItems.find(item => item.handle === handle)!.images.length) % 
@@ -117,10 +137,24 @@ export default function SizeMatchContent() {
   };
 
   const handleNextImage = (handle: string) => {
+    setImageLoading(prev => ({ ...prev, [handle]: true }));
+    setTimeout(() => {
+      setImageLoading(prev => ({ ...prev, [handle]: false }));
+    }, 5000);
     setCurrentImageIndexes(prev => ({
       ...prev,
       [handle]: (prev[handle] + 1) % groupedItems.find(item => item.handle === handle)!.images.length
     }));
+  };
+
+  const handleImageLoad = (handle: string) => {
+    console.log('Image loaded for handle:', handle);
+    setImageLoading(prev => ({ ...prev, [handle]: false }));
+  };
+
+  const handleImageError = (handle: string) => {
+    console.error('Image failed to load for handle:', handle);
+    setImageLoading(prev => ({ ...prev, [handle]: false }));
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>, handle: string) => {
@@ -142,6 +176,21 @@ export default function SizeMatchContent() {
     });
   };
 
+  // Filter items based on drop
+  const filteredItems = groupedItems.filter(item => {
+    if (dropParam === 'unsorted' && (item.dropNumber || item.dropNumber === '')) {
+      return false;
+    }
+    if (dropParam && dropParam !== 'unsorted' && String(item.dropNumber) !== dropParam) {
+      return false;
+    }
+    return true;
+  });
+
+  const handleDropChange = (drop: string) => {
+    router.push(`/sizeMatch${drop ? `?drop=${drop}` : ''}`);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
@@ -161,9 +210,34 @@ export default function SizeMatchContent() {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">Size Match View</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">
+          {dropParam === 'unsorted' 
+            ? `Unsorted Items (${filteredItems.length})`
+            : dropParam 
+              ? `Drop ${dropParam} Items (${filteredItems.length})` 
+              : `All Items (${filteredItems.length})`
+          }
+        </h1>
+        <div className="flex items-center gap-4">
+          <select
+            value={dropParam || ''}
+            onChange={(e) => handleDropChange(e.target.value)}
+            className="rounded-lg border border-gray-200 py-2 px-3 text-sm bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors min-w-[160px]"
+          >
+            <option value="">All Drops</option>
+            <option value="1">Drop 1</option>
+            <option value="2">Drop 2</option>
+            <option value="3">Drop 3</option>
+            <option value="4">Drop 4</option>
+            <option value="5">Drop 5</option>
+            <option value="unsorted">Unsorted</option>
+          </select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {groupedItems.map((item) => (
+        {filteredItems.map((item) => (
           <div 
             key={item.handle} 
             className="border rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
@@ -173,18 +247,27 @@ export default function SizeMatchContent() {
               onMouseMove={(e) => handleMouseMove(e, item.handle)}
               onMouseLeave={() => handleMouseLeave(item.handle)}
             >
+              {imageLoading[item.handle] ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                  <p className="text-xl font-semibold text-gray-600">Loading...</p>
+                </div>
+              ) : null}
               <Image 
                 src={item.images[currentImageIndexes[item.handle]]} 
                 alt={item.title || 'Product image'} 
                 fill
                 sizes="(max-width: 768px) 100vw, 486px"
-                className="object-cover object-center transition-transform duration-75"
+                className={`object-cover object-center transition-transform duration-75 ${
+                  imageLoading[item.handle] ? 'opacity-0' : 'opacity-100'
+                }`}
                 style={{
                   transform: mousePositions[item.handle] 
                     ? `scale(4) translate(${(50 - mousePositions[item.handle].x) / 4}%, ${(50 - mousePositions[item.handle].y) / 4}%)`
                     : 'scale(1)',
                 }}
                 priority
+                onLoad={() => handleImageLoad(item.handle)}
+                onError={() => handleImageError(item.handle)}
               />
               
               {item.images.length > 1 && (
@@ -192,18 +275,28 @@ export default function SizeMatchContent() {
                   <button
                     onClick={(e) => {
                       e.preventDefault();
-                      handlePrevImage(item.handle);
+                      if (!imageLoading[item.handle]) {
+                        handlePrevImage(item.handle);
+                      }
                     }}
-                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white rounded-full p-2 opacity-0 hover:opacity-100 transition-opacity z-10"
+                    className={`absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white rounded-full p-2 opacity-0 hover:opacity-100 transition-opacity z-10 ${
+                      imageLoading[item.handle] ? 'cursor-not-allowed' : ''
+                    }`}
+                    disabled={imageLoading[item.handle]}
                   >
                     <span className="material-icons">chevron_left</span>
                   </button>
                   <button
                     onClick={(e) => {
                       e.preventDefault();
-                      handleNextImage(item.handle);
+                      if (!imageLoading[item.handle]) {
+                        handleNextImage(item.handle);
+                      }
                     }}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white rounded-full p-2 opacity-0 hover:opacity-100 transition-opacity z-10"
+                    className={`absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white rounded-full p-2 opacity-0 hover:opacity-100 transition-opacity z-10 ${
+                      imageLoading[item.handle] ? 'cursor-not-allowed' : ''
+                    }`}
+                    disabled={imageLoading[item.handle]}
                   >
                     <span className="material-icons">chevron_right</span>
                   </button>
@@ -228,7 +321,7 @@ export default function SizeMatchContent() {
               <p className="font-medium mb-2">Handle: {item.handle}</p>
               <div className="space-y-2">
                 {item.variants.map((variant, idx) => (
-                  <div key={variant.sku || idx} className="text-sm">
+                  <div key={`${item.handle}-${variant.sku || idx}`} className="text-sm">
                     <p className="font-medium">Size: {variant.option1}</p>
                   </div>
                 ))}
