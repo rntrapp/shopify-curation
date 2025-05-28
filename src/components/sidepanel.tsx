@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useDropContext } from '@/contexts/DropContext';
 
 export default function SidePanel() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { drops, unsortedCount, loading, error } = useDropContext();
   
   // Set collapsed state based on current path
   useEffect(() => {
@@ -58,62 +60,67 @@ export default function SidePanel() {
           </ul>
           
           <h2 className={`text-xl font-semibold mt-6 ${isCollapsed ? 'sr-only' : ''}`}>Drops</h2>
-          <ul className="space-y-2">
-            <li>
-              <Link 
-                href="/products?drop=1" 
-                className={`hover:text-gray-300 flex items-center ${isCollapsed ? 'justify-center' : ''}`}
-              >
-                <span className="material-icons text-xl">inventory_2</span>
-                {!isCollapsed && <span className="ml-2">Drop 1</span>}
-              </Link>
-            </li>
-            <li>
-              <Link 
-                href="/products?drop=2" 
-                className={`hover:text-gray-300 flex items-center ${isCollapsed ? 'justify-center' : ''}`}
-              >
-                <span className="material-icons text-xl">inventory_2</span>
-                {!isCollapsed && <span className="ml-2">Drop 2</span>}
-              </Link>
-            </li>
-            <li>
-              <Link 
-                href="/products?drop=3" 
-                className={`hover:text-gray-300 flex items-center ${isCollapsed ? 'justify-center' : ''}`}
-              >
-                <span className="material-icons text-xl">inventory_2</span>
-                {!isCollapsed && <span className="ml-2">Drop 3</span>}
-              </Link>
-            </li>
-            <li>
-              <Link 
-                href="/products?drop=4" 
-                className={`hover:text-gray-300 flex items-center ${isCollapsed ? 'justify-center' : ''}`}
-              >
-                <span className="material-icons text-xl">inventory_2</span>
-                {!isCollapsed && <span className="ml-2">Drop 4</span>}
-              </Link>
-            </li>
-            <li>
-              <Link 
-                href="/products?drop=5" 
-                className={`hover:text-gray-300 flex items-center ${isCollapsed ? 'justify-center' : ''}`}
-              >
-                <span className="material-icons text-xl">inventory_2</span>
-                {!isCollapsed && <span className="ml-2">Drop 5</span>}
-              </Link>
-            </li>
-            <li>
-              <Link 
-                href="/products?drop=unsorted" 
-                className={`hover:text-gray-300 flex items-center ${isCollapsed ? 'justify-center' : ''}`}
-              >
-                <span className="material-icons text-xl">category</span>
-                {!isCollapsed && <span className="ml-2">Unsorted</span>}
-              </Link>
-            </li>
-          </ul>
+          
+          {loading && !isCollapsed && (
+            <div className="flex items-center space-x-2 text-gray-400">
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-400"></div>
+              <span className="text-sm">Loading drops...</span>
+            </div>
+          )}
+          
+          {loading && isCollapsed && (
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-400"></div>
+            </div>
+          )}
+          
+          {error && !isCollapsed && (
+            <div className="text-red-400 text-sm">
+              Error loading drops
+            </div>
+          )}
+          
+          {!loading && !error && (
+            <ul className="space-y-2">
+              {drops.map((drop) => (
+                <li key={drop.dropNumber}>
+                  <Link 
+                    href={`/products?drop=${drop.dropNumber}`}
+                    className={`hover:text-gray-300 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}
+                  >
+                    <div className="flex items-center">
+                      <span className="material-icons text-xl">inventory_2</span>
+                      {!isCollapsed && <span className="ml-2">Drop {drop.dropNumber}</span>}
+                    </div>
+                    {!isCollapsed && (
+                      <span className="text-xs bg-gray-700 px-2 py-1 rounded-full">
+                        {drop.count}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              ))}
+              
+              {unsortedCount > 0 && (
+                <li>
+                  <Link 
+                    href="/products?drop=unsorted"
+                    className={`hover:text-gray-300 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}
+                  >
+                    <div className="flex items-center">
+                      <span className="material-icons text-xl">category</span>
+                      {!isCollapsed && <span className="ml-2">Unsorted</span>}
+                    </div>
+                    {!isCollapsed && (
+                      <span className="text-xs bg-gray-700 px-2 py-1 rounded-full">
+                        {unsortedCount}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              )}
+            </ul>
+          )}
         </nav>
       </aside>
     </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
+import { useDropContext } from '@/contexts/DropContext';
 
 type SheetItem = {
   Handle: string;
@@ -43,20 +44,67 @@ type GroupedItem = {
 export default function ProductsContent() {
   const searchParams = useSearchParams();
   const dropParam = searchParams?.get('drop') ?? null;
+  const { rawItems, loading, error } = useDropContext();
   
   const [groupedItems, setGroupedItems] = useState<GroupedItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [expandedVariants, setExpandedVariants] = useState<Set<string>>(new Set());
+  const [itemsToShow, setItemsToShow] = useState<number>(4);
 
   // Add this new useEffect to reset filters when drop changes
   useEffect(() => {
     setSelectedType('');
     setSelectedColor('');
+    setItemsToShow(4); // Reset items to show when drop changes
   }, [dropParam]); // Reset filters whenever dropParam changes
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setItemsToShow(4);
+  }, [selectedType, selectedColor]);
+
+  // Process rawItems into groupedItems whenever rawItems changes
+  useEffect(() => {
+    if (rawItems.length > 0) {
+      const grouped = Object.values(rawItems.reduce((acc: Record<string, GroupedItem>, item: SheetItem) => {
+        const handle = item.Handle;
+        
+        if (!acc[handle]) {
+          acc[handle] = {
+            handle: handle,
+            title: item.Title,
+            body_html: item['Body (HTML)'],
+            type: item.Type,
+            tags: item.Tags,
+            image: item['Image Src'],
+            images: [],
+            variants: [],
+            dropNumber: item['Drop #'],
+            price: item['Variant Price'] || 'N/A'
+          };
+        }
+
+        if (item['Image Src'] && !acc[handle].images.includes(item['Image Src'])) {
+          acc[handle].images.push(item['Image Src']);
+        }
+
+        if (item['Variant SKU']) {
+          acc[handle].variants.push({
+            sku: item['Variant SKU'],
+            option1: item['Option1 Value'] || '',
+            option2: item['Option2 Value'] || '',
+            inventory_quantity: parseInt(item['Variant Inventory Qty']) || item['Variant Inventory Quantity'] || 0
+          });
+        }
+
+        return acc;
+      }, {}));
+
+      setGroupedItems(grouped as GroupedItem[]);
+    }
+  }, [rawItems]);
 
   // Get unique types and colors
   const uniqueTypes = Array.from(new Set(groupedItems.map(item => item.type))).filter(Boolean).sort();
@@ -67,63 +115,6 @@ export default function ProductsContent() {
         .filter(Boolean)
     )
   ).sort();
-
-  useEffect(() => {
-    async function fetchItems() {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/sheets');
-        
-        if (!response.ok) {
-          throw new Error(`Error fetching data: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        const grouped = Object.values(data.items.reduce((acc: Record<string, GroupedItem>, item: SheetItem) => {
-          const handle = item.Handle;
-          
-          if (!acc[handle]) {
-            acc[handle] = {
-              handle: handle,
-              title: item.Title,
-              body_html: item['Body (HTML)'],
-              type: item.Type,
-              tags: item.Tags,
-              image: item['Image Src'],
-              images: [],
-              variants: [],
-              dropNumber: item['Drop #'],
-              price: item['Variant Price'] || 'N/A'
-            };
-          }
-
-          if (item['Image Src'] && !acc[handle].images.includes(item['Image Src'])) {
-            acc[handle].images.push(item['Image Src']);
-          }
-
-          if (item['Variant SKU']) {
-            acc[handle].variants.push({
-              sku: item['Variant SKU'],
-              option1: item['Option1 Value'] || '',
-              option2: item['Option2 Value'] || '',
-              inventory_quantity: parseInt(item['Variant Inventory Qty']) || item['Variant Inventory Quantity'] || 0
-            });
-          }
-
-          return acc;
-        }, {}));
-
-        setGroupedItems(grouped as GroupedItem[]);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchItems();
-  }, []);
 
   // Filter grouped items based on all filters
   const filteredItems = groupedItems.filter(item => {
@@ -286,9 +277,9 @@ export default function ProductsContent() {
                 : 'There are no items assigned to this drop.'}
             </p>
           </div>
-        ) : (
+          ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-            {filteredItems.map((item) => (
+            {filteredItems.slice(0, itemsToShow).map((item) => (
               <div 
                 key={item.handle} 
                 className="border rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
@@ -398,7 +389,18 @@ export default function ProductsContent() {
                 </div>
               </div>
             ))}
-          </div>
+            {/* Load More Button */}
+            {itemsToShow < filteredItems.length && (
+              <div className="mt-8">
+                <button
+                  onClick={() => setItemsToShow(prev => prev + 4)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+                >
+                  Load More ({Math.min(4, filteredItems.length - itemsToShow)} more items)
+                </button>
+              </div>
+            )}
+          </div>    
         )}
       </div>
     </>

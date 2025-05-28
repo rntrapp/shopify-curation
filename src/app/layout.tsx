@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import SidePanel from "@/components/sidepanel";
+import { DropProvider } from "@/contexts/DropContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,12 +28,14 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} antialiased`}>
-        <div className="flex min-h-screen">
-          <SidePanel />
-          <main className="flex-1 p-6 transition-all duration-300">
-            {children}
-          </main>
-        </div>
+        <DropProvider>
+          <div className="flex min-h-screen">
+            <SidePanel />
+            <main className="flex-1 p-6 transition-all duration-300">
+              {children}
+            </main>
+          </div>
+        </DropProvider>
       </body>
     </html>
   );
