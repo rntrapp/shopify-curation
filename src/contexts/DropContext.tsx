@@ -75,7 +75,7 @@ export function DropProvider({ children }: { children: ReactNode }) {
     const dropNumber = item['Drop #'];
     
     // Only process each handle once (take the first occurrence)
-    if (!handleToDropMap.hasOwnProperty(handle)) {
+    if (!Object.prototype.hasOwnProperty.call(handleToDropMap, handle)) {
       handleToDropMap[handle] = dropNumber ?? null;
     }
   });
